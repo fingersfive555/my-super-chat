@@ -78,4 +78,4 @@ if __name__ == '__main__':
 
     print(f"系統啟動！使用 Port: {port}")
     # host='0.0.0.0' 是雲端必備設定
-    socketio.run(app, debug=False, host='0.0.0.0', port=port)
+    socketio.run(app, debug=False, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
