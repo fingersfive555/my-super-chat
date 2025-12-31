@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>終極聊天室 V3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- V3 極致風格 CSS --- */
+        body { font-family: 'Noto Sans TC', sans-serif; background: #2c3e50; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        
+        #chat-box { width: 90%; max-width: 800px; height: 80vh; background: rgba(0,0,0,0.5); border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+        
+        header { padding: 20px; background: rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        h2 { margin: 0; font-weight: 300; letter-spacing: 2px; color: #00d2ff; }
+        
+        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        
+        .msg { padding: 10px 15px; border-radius: 10px; max-width: 70%; position: relative; }
+        .msg-left { align-self: flex-start; background: rgba(255,255,255,0.1); }
+        .msg-right { align-self: flex-end; background: linear-gradient(135deg, #00d2ff, #3a7bd5); color: white; }
+        .meta { font-size: 10px; opacity: 0.7; margin-bottom: 5px; display: block; }
+        
+        /* 🕵️‍♂️ 諜報模式特效 */
+        .spy-blur .msg { filter: blur(8px); transition: 0.3s; cursor: crosshair; }
+        .spy-blur .msg:hover { filter: blur(0); }
+
+        .controls { padding: 20px; background: rgba(0,0,0,0.3); display: flex; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); }
+        input[type="text"] { flex: 1; padding: 10px; border-radius: 5px; border: none; outline: none; background: rgba(255,255,255,0.9); }
+        button { padding: 10px 20px; background: #00d2ff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        /* 登入畫面 */
+        #login { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; z-index: 99; display: flex; justify-content: center; align-items: center; }
+        .login-card { background: white; padding: 40px; border-radius: 10px; color: #333; text-align: center; }
+        .login-card input { display: block; margin: 10px auto; padding: 10px; width: 200px; }
+    </style>
+</head>
+<body>
+
+    <div id="login">
+        <div class="login-card">
+            <h1>歡迎來到 V3</h1>
+            <input type="text" id="username" placeholder="你的名字">
+            <input type="text" id="room" placeholder="房間代號">
+            <button onclick="startChat()">進入聊天室</button>
+        </div>
+    </div>
+
+    <div id="chat-box">
+        <header>
+            <h2 id="room-title">聊天室</h2>
+            <label style="cursor: pointer; font-size: 14px;">
+                <input type="checkbox" id="spy-toggle"> 🕵️‍♂️ 開啟諜報模式
+            </label>
+        </header>
+        <div id="messages"></div>
+        <div class="controls">
+            <input type="text" id="inp" placeholder="輸入訊息...">
+            <button onclick="send()">發送</button>
+        </div>
+    </div>
+
+    <script>
+        var socket = io();
+        var myName = "";
+        var myRoom = "";
+
+        function startChat(){
+            myName = $('#username').val();
+            myRoom = $('#room').val();
+            if(myName && myRoom){
+                $('#login').fadeOut();
+                $('#room-title').text("房間: " + myRoom);
+                socket.emit('join', {username: myName, room: myRoom});
+            }
+        }
+
+        socket.on('receive_message', function(data){
+            var cls = (data.username === myName) ? 'msg-right' : 'msg-left';
+            var html = `<div class="msg ${cls}">
+                <span class="meta">${data.username}</span>
+                ${data.message}
+            </div>`;
+            $('#messages').append(html);
+            document.getElementById('messages').scrollTop = 9999;
+        });
+
+        socket.on('load_history', function(data){
+            data.forEach(function(msg){
+                // 這裡簡化處理，直接顯示
+                var cls = (msg[0] === myName) ? 'msg-right' : 'msg-left';
+                $('#messages').append(`<div class="msg ${cls}"><span class="meta">${msg[0]}</span>${msg[1]}</div>`);
+            });
+        });
+
+        function send(){
+            var msg = $('#inp').val();
+            if(msg){
+                socket.emit('send_message', {room: myRoom, username: myName, message: msg});
+                $('#inp').val('');
+            }
+        }
+
+        // 諜報模式開關
+        $('#spy-toggle').change(function(){
+            if(this.checked) $('#messages').addClass('spy-blur');
+            else $('#messages').removeClass('spy-blur');
+        });
+    </script>
+</body>
+</html>
