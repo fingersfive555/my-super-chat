@@ -3,62 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>超級聊天室 </title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <title>終極聊天室 V3 (Spy Mode)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
     <style>
-        /* --- V3 極致風格 CSS --- */
-        body { font-family: 'Noto Sans TC', sans-serif; background: #2c3e50; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        
-        #chat-box { width: 90%; max-width: 800px; height: 80vh; background: rgba(0,0,0,0.5); border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
-        
-        header { padding: 20px; background: rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        h2 { margin: 0; font-weight: 300; letter-spacing: 2px; color: #00d2ff; }
-        
-        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        
-        .msg { padding: 10px 15px; border-radius: 10px; max-width: 70%; position: relative; }
-        .msg-left { align-self: flex-start; background: rgba(255,255,255,0.1); }
-        .msg-right { align-self: flex-end; background: linear-gradient(135deg, #00d2ff, #3a7bd5); color: white; }
-        .meta { font-size: 10px; opacity: 0.7; margin-bottom: 5px; display: block; }
-        
-        /* 🕵️‍♂️ 防窺模式特效 */
-        .spy-blur .msg { filter: blur(8px); transition: 0.3s; cursor: crosshair; }
-        .spy-blur .msg:hover { filter: blur(0); }
+        /* --- 全局黑客風格設定 --- */
+        body {
+            background-color: #1a1a1a; /* 深灰背景 */
+            color: #00d2ff; /* 霓虹藍文字 */
+            font-family: 'Courier New', monospace; /* 編碼字體 */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
 
-        .controls { padding: 20px; background: rgba(0,0,0,0.3); display: flex; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); }
-        input[type="text"] { flex: 1; padding: 10px; border-radius: 5px; border: none; outline: none; background: rgba(255,255,255,0.9); }
-        button { padding: 10px 20px; background: #00d2ff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        /* --- 登入框樣式 --- */
+        #login-screen {
+            background: #2c3e50;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+            text-align: center;
+        }
+
+        input {
+            background: #333;
+            border: 1px solid #00d2ff;
+            color: white;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        button {
+            background: #00d2ff;
+            color: #1a1a1a;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: white;
+            box-shadow: 0 0 15px #00d2ff;
+        }
+
+        /* --- 聊天室主畫面 --- */
+        #chat-screen {
+            display: none; /* 一開始隱藏 */
+            width: 90%;
+            max-width: 600px;
+            height: 80vh;
+            background: #222;
+            border: 2px solid #00d2ff;
+            border-radius: 10px;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 標題列 */
+        .header {
+            padding: 15px;
+            background: #00d2ff;
+            color: #1a1a1a;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- 訊息顯示區 --- */
+        #messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-image: linear-gradient(#222 1px, transparent 1px),
+            linear-gradient(90deg, #222 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-color: #1a1a1a;
+        }
+
+        /* 訊息泡泡 */
+        .msg {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 70%;
+            word-wrap: break-word;
+            position: relative;
+            transition: all 0.3s ease; /* 動畫效果 */
+        }
+
+        /* 別人的訊息 */
+        .msg-left {
+            background: #2c3e50;
+            color: white;
+            align-self: flex-start;
+            border-left: 3px solid #00d2ff;
+        }
+
+        /* 我的訊息 */
+        .msg-right {
+            background: #00d2ff;
+            color: #1a1a1a;
+            margin-left: auto; /* 靠右對齊 */
+            border-right: 3px solid white;
+        }
+
+        /* 名字與時間的小字 */
+        .meta {
+            font-size: 0.8em;
+            display: block;
+            margin-bottom: 5px;
+            opacity: 0.8;
+            font-weight: bold;
+        }
         
-        /* 登入畫面 */
-        #login { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; z-index: 99; display: flex; justify-content: center; align-items: center; }
-        .login-card { background: white; padding: 40px; border-radius: 10px; color: #333; text-align: center; }
-        .login-card input { display: block; margin: 10px auto; padding: 10px; width: 200px; }
+        /* ★★★ 新增：時間樣式 ★★★ */
+        .time-text {
+            font-size: 0.85em;
+            font-weight: normal;
+            margin-left: 5px;
+            opacity: 0.7;
+        }
+
+        /* --- 諜報模式 (Spy Mode) 核心特效 --- */
+        /* 當父層有 spy-active 類別時，訊息預設模糊 */
+        .spy-active .msg {
+            filter: blur(8px); /* 模糊程度 */
+            opacity: 0.5;
+            user-select: none; /* 防止被選取文字 */
+        }
+
+        /* 滑鼠移上去時，瞬間變清晰 */
+        .spy-active .msg:hover {
+            filter: blur(0);
+            opacity: 1;
+            user-select: auto;
+            cursor: crosshair;
+        }
+
+        /* --- 輸入區 --- */
+        .input-area {
+            padding: 15px;
+            background: #222;
+            border-top: 1px solid #00d2ff;
+            display: flex;
+        }
+
+        #msg-input {
+            flex: 1;
+        }
+
     </style>
 </head>
 <body>
 
-    <div id="login">
-        <div class="login-card">
-            <h1>歡迎來到 V3</h1>
-            <input type="text" id="username" placeholder="你的名字">
-            <input type="text" id="room" placeholder="房間代號">
-            <button onclick="startChat()">進入聊天室</button>
-        </div>
+    <div id="login-screen">
+        <h2>🔒 安全連線入口</h2>
+        <input type="text" id="username" placeholder="代號 (Username)">
+        <input type="text" id="room" placeholder="頻段 (Room ID)">
+        <br><br>
+        <button onclick="login()">進入系統</button>
     </div>
 
-    <div id="chat-box">
-        <header>
-            <h2 id="room-title">聊天室</h2>
-            <label style="cursor: pointer; font-size: 14px;">
-                <input type="checkbox" id="spy-toggle"> 🕵️‍♂️ 開啟防窺模式
+    <div id="chat-screen">
+        <div class="header">
+            <span id="room-display">頻段: ???</span>
+            
+            <label style="font-size: 0.8em; cursor: pointer;">
+                <input type="checkbox" id="spy-toggle"> 🕵️ 諜報模式
             </label>
-        </header>
-        <div id="messages"></div>
-        <div class="controls">
-            <input type="text" id="inp" placeholder="輸入訊息...">
-            <button onclick="send()">發送</button>
+        </div>
+
+        <div id="messages">
+            </div>
+
+        <div class="input-area">
+            <input type="text" id="msg-input" placeholder="輸入加密訊息...">
+            <button onclick="sendMessage()">發送</button>
         </div>
     </div>
 
@@ -67,47 +199,100 @@
         var myName = "";
         var myRoom = "";
 
-        function startChat(){
+        // 登入功能
+        function login() {
             myName = $('#username').val();
             myRoom = $('#room').val();
-            if(myName && myRoom){
-                $('#login').fadeOut();
-                $('#room-title').text("房間: " + myRoom);
+
+            if(myName && myRoom) {
+                // 告訴 Python 我要加入這個房間
                 socket.emit('join', {username: myName, room: myRoom});
+                
+                // 切換畫面
+                $('#login-screen').hide();
+                $('#chat-screen').css('display', 'flex'); // flex 才能保持排版
+                $('#room-display').text("頻段: " + myRoom);
+            } else {
+                alert("請輸入代號與頻段！");
             }
         }
 
+        // 監聽諜報模式開關
+        $('#spy-toggle').change(function() {
+            if(this.checked) {
+                $('#messages').addClass('spy-active'); // 開啟模糊
+            } else {
+                $('#messages').removeClass('spy-active'); // 關閉模糊
+            }
+        });
+
+        // 接收別人傳來的訊息
         socket.on('receive_message', function(data){
             var cls = (data.username === myName) ? 'msg-right' : 'msg-left';
-            var html = `<div class="msg ${cls}">
-                <span class="meta">${data.username}</span>
-                ${data.message}
-            </div>`;
+            
+            // ★★★ 這裡修改了：加入了時間顯示 ★★★
+            var html = `
+                <div class="msg ${cls}">
+                    <span class="meta">
+                        ${data.username} 
+                        <small class="time-text">(${data.timestamp})</small>
+                    </span>
+                    ${data.message}
+                </div>
+            `;
+            
             $('#messages').append(html);
-            document.getElementById('messages').scrollTop = 9999;
+            scrollToBottom();
         });
 
+        // 載入歷史訊息 (從資料庫)
         socket.on('load_history', function(data){
+            // 清空目前的畫面，避免重複
+            $('#messages').empty();
+
             data.forEach(function(msg){
-                // 這裡簡化處理，直接顯示
+                // msg[0]=名字, msg[1]=訊息, msg[2]=時間
                 var cls = (msg[0] === myName) ? 'msg-right' : 'msg-left';
-                $('#messages').append(`<div class="msg ${cls}"><span class="meta">${msg[0]}</span>${msg[1]}</div>`);
+                
+                // ★★★ 這裡也修改了：歷史訊息也要顯示時間 ★★★
+                var html = `
+                    <div class="msg ${cls}">
+                        <span class="meta">
+                            ${msg[0]} 
+                            <small class="time-text">(${msg[2]})</small>
+                        </span>
+                        ${msg[1]}
+                    </div>
+                `;
+                $('#messages').append(html);
             });
+            scrollToBottom();
         });
 
-        function send(){
-            var msg = $('#inp').val();
-            if(msg){
-                socket.emit('send_message', {room: myRoom, username: myName, message: msg});
-                $('#inp').val('');
+        // 發送訊息
+        function sendMessage() {
+            var msg = $('#msg-input').val();
+            if(msg) {
+                socket.emit('send_message', {
+                    username: myName, 
+                    message: msg, 
+                    room: myRoom
+                });
+                $('#msg-input').val(''); // 清空輸入框
             }
         }
 
-        // 防窺模式開關
-        $('#spy-toggle').change(function(){
-            if(this.checked) $('#messages').addClass('spy-blur');
-            else $('#messages').removeClass('spy-blur');
+        // 按 Enter 也可以發送
+        $('#msg-input').keypress(function(e){
+            if(e.which == 13) sendMessage();
         });
+
+        // 自動捲動到底部
+        function scrollToBottom() {
+            var div = document.getElementById('messages');
+            div.scrollTop = div.scrollHeight;
+        }
+
     </script>
 </body>
 </html>
